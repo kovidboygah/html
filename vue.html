@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lessons with Checkout</title>
+  <!-- Include Vue 2.7.8 via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8"></script>
+  <!-- Include Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .lesson, .cart-item {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+    }
+    .icon {
+      color: #2a9d8f;
+      margin-right: 10px;
+    }
+    .cart-btn, .remove-btn, .checkout-btn, .back-btn {
+      padding: 5px 10px;
+      background-color: #2a9d8f;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .cart-btn:disabled, .remove-btn:disabled, .checkout-btn:disabled, .back-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .switch-view-btn {
+      margin: 10px 0;
+    }
+    .checkout-form {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f1f1f1;
+      border-radius: 8px;
+    }
+    .confirmation-message {
+      color: green;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1 v-if="showLessonsPage">List of Lessons</h1>
+    <h1 v-else>Shopping Cart</h1>
+
+    <!-- Switch between Lesson Page and Cart Page -->
+    <button
+      class="switch-view-btn"
+      @click="toggleCartView"
+      :disabled="cart.length === 0"
+    >
+      {{ showLessonsPage ? 'View Cart' : 'Back to Lessons' }}
+    </button>
+
+    <!-- Lessons List -->
+    <div v-if="showLessonsPage">
+      <div v-for="lesson in lessons" :key="lesson.id" class="lesson">
+        <h3><i class="icon fas fa-book"></i>{{ lesson.subject }}</h3>
+        <p><strong>Location:</strong> {{ lesson.location }}</p>
+        <p><strong>Price:</strong> ${{ lesson.price }}</p>
+        <p><strong>Spaces Left:</strong> {{ lesson.spaces }}</p>
+
+        <!-- Add to Cart Button -->
+        <button
+          class="cart-btn"
+          :disabled="lesson.spaces === 0"
+          @click="addToCart(lesson)"
+        >
+          Add to Cart
+        </button>
+      </div>
+    </div>
+
+    <!-- Shopping Cart Page -->
+    <div v-else>
+      <!-- Cart Items -->
+      <div v-if="cart.length === 0">Your cart is empty.</div>
+      <div v-for="(item, index) in cart" :key="item.id" class="cart-item">
+        <h3><i class="icon fas fa-shopping-cart"></i>{{ item.subject }}</h3>
+        <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+
+        <!-- Remove from Cart Button -->
+        <button
+          class="remove-btn"
+          @click="removeFromCart(item)"
+        >
+          Remove from Cart
+        </button>
+      </div>
+
+      <!-- Checkout Form -->
+      <div class="checkout-form">
+        <h3>Checkout</h3>
+        <p>
+          <label for="name">Name:</label>
+          <input type="text" v-model="name" @input="validateForm" />
+          <span v-if="nameError" style="color: red;">{{ nameError }}</span>
+        </p>
+        <p>
+          <label for="phone">Phone:</label>
+          <input type="text" v-model="phone" @input="validateForm" />
+          <span v-if="phoneError" style="color: red;">{{ phoneError }}</span>
+        </p>
+        <button
+          class="checkout-btn"
+          :disabled="!isCheckoutEnabled"
+          @click="submitOrder"
+        >
+          Checkout
+        </button>
+
+        <!-- Go Back Button -->
+        <button
+          class="back-btn"
+          @click="goBack"
+        >
+          Go Back
+        </button>
+      </div>
+
+      <!-- Confirmation Message -->
+      <div v-if="confirmationMessage" class="confirmation-message">
+        {{ confirmationMessage }}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        showLessonsPage: true, // Show lessons page by default
+        lessons: [
+          { id: 1, subject: 'Mathematics', location: 'New York', price: 100, spaces: 5 },
+          { id: 2, subject: 'Physics', location: 'Los Angeles', price: 90, spaces: 3 },
+          { id: 3, subject: 'Chemistry', location: 'Chicago', price: 80, spaces: 2 },
+          { id: 4, subject: 'Biology', location: 'Houston', price: 70, spaces: 5 },
+          { id: 5, subject: 'Computer Science', location: 'Phoenix', price: 120, spaces: 4 },
+          { id: 6, subject: 'History', location: 'Philadelphia', price: 75, spaces: 5 },
+          { id: 7, subject: 'Art', location: 'San Antonio', price: 85, spaces: 1 },
+          { id: 8, subject: 'Music', location: 'San Diego', price: 95, spaces: 2 },
+          { id: 9, subject: 'Geography', location: 'Dallas', price: 60, spaces: 5 },
+          { id: 10, subject: 'English', location: 'San Jose', price: 110, spaces: 0 }
+        ],
+        cart: [],
+        name: '',
+        phone: '',
+        nameError: '',
+        phoneError: '',
+        isCheckoutEnabled: false,
+        confirmationMessage: ''
+      },
+      methods: {
+        addToCart(lesson) {
+          if (lesson.spaces > 0) {
+            lesson.spaces -= 1;
+
+            const cartItem = this.cart.find(item => item.id === lesson.id);
+            if (cartItem) {
+              cartItem.quantity += 1;
+            } else {
+              this.cart.push({
+                id: lesson.id,
+                subject: lesson.subject,
+                quantity: 1
+              });
+            }
+          }
+        },
+        removeFromCart(item) {
+          const lesson = this.lessons.find(lesson => lesson.id === item.id);
+          lesson.spaces += item.quantity;
+          this.cart = this.cart.filter(cartItem => cartItem.id !== item.id);
+        },
+        toggleCartView() {
+          this.showLessonsPage = !this.showLessonsPage;
+        },
+        validateForm() {
+          const nameRegex = /^[a-zA-Z\s]+$/; // Only letters and spaces
+          const phoneRegex = /^\d+$/; // Only numbers
+
+          this.nameError = '';
+          this.phoneError = '';
+
+          if (!nameRegex.test(this.name)) {
+            this.nameError = 'Name must contain letters only';
+          }
+
+          if (!phoneRegex.test(this.phone)) {
+            this.phoneError = 'Phone must contain numbers only';
+          }
+
+          this.isCheckoutEnabled = !this.nameError && !this.phoneError && this.name !== '' && this.phone !== '';
+        },
+        submitOrder() {
+          if (this.isCheckoutEnabled) {
+            this.confirmationMessage = 'Order has been submitted successfully!';
+            this.cart = []; // Clear the cart after submission
+            this.name = '';
+            this.phone = '';
+            this.isCheckoutEnabled = false;
+          }
+        },
+        goBack() {
+          this.showLessonsPage = true; // Switch back to the lessons page
+          this.name = ''; // Clear the name input
+          this.phone = ''; // Clear the phone input
+          this.nameError = ''; // Reset name error
+          this.phoneError = ''; // Reset phone error
+          this.confirmationMessage = ''; // Reset confirmation message
+        }
+      }
+    });
+  </script>
+</body>
+</html>
