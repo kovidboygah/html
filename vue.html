@@ -67,7 +67,7 @@
 
     <!-- Lessons List -->
     <div v-if="showLessonsPage">
-      <div v-for="lesson in lessons" :key="lesson.id" class="lesson">
+      <div v-for="lesson in lessons" :key="lesson._id" class="lesson">
         <h3><i class="icon fas fa-book"></i>{{ lesson.subject }}</h3>
         <p><strong>Location:</strong> {{ lesson.location }}</p>
         <p><strong>Price:</strong> ${{ lesson.price }}</p>
@@ -88,7 +88,7 @@
     <div v-else>
       <!-- Cart Items -->
       <div v-if="cart.length === 0">Your cart is empty.</div>
-      <div v-for="(item, index) in cart" :key="item.id" class="cart-item">
+      <div v-for="(item, index) in cart" :key="item._id" class="cart-item">
         <h3><i class="icon fas fa-shopping-cart"></i>{{ item.subject }}</h3>
         <p><strong>Quantity:</strong> {{ item.quantity }}</p>
 
@@ -143,18 +143,7 @@
       el: '#app',
       data: {
         showLessonsPage: true, // Show lessons page by default
-        lessons: [
-          { id: 1, subject: 'Mathematics', location: 'New York', price: 100, spaces: 5 },
-          { id: 2, subject: 'Physics', location: 'Los Angeles', price: 90, spaces: 3 },
-          { id: 3, subject: 'Chemistry', location: 'Chicago', price: 80, spaces: 2 },
-          { id: 4, subject: 'Biology', location: 'Houston', price: 70, spaces: 5 },
-          { id: 5, subject: 'Computer Science', location: 'Phoenix', price: 120, spaces: 4 },
-          { id: 6, subject: 'History', location: 'Philadelphia', price: 75, spaces: 5 },
-          { id: 7, subject: 'Art', location: 'San Antonio', price: 85, spaces: 1 },
-          { id: 8, subject: 'Music', location: 'San Diego', price: 95, spaces: 2 },
-          { id: 9, subject: 'Geography', location: 'Dallas', price: 60, spaces: 5 },
-          { id: 10, subject: 'English', location: 'San Jose', price: 110, spaces: 0 }
-        ],
+        lessons: [], // Empty array to be filled by fetched lessons
         cart: [],
         name: '',
         phone: '',
@@ -163,7 +152,19 @@
         isCheckoutEnabled: false,
         confirmationMessage: ''
       },
+      created() {
+        this.fetchLessons(); // Fetch lessons when the Vue instance is created
+      },
       methods: {
+        async fetchLessons() {
+          try {
+            const response = await fetch('http://localhost:3000/lessons');
+            const data = await response.json();
+            this.lessons = data; // Assign the fetched lessons to the lessons array
+          } catch (error) {
+            console.error('Error fetching lessons:', error);
+          }
+        },
         addToCart(lesson) {
           if (lesson.spaces > 0) {
             lesson.spaces -= 1;
@@ -173,7 +174,7 @@
               cartItem.quantity += 1;
             } else {
               this.cart.push({
-                id: lesson.id,
+                id: lesson._id,
                 subject: lesson.subject,
                 quantity: 1
               });
@@ -181,7 +182,7 @@
           }
         },
         removeFromCart(item) {
-          const lesson = this.lessons.find(lesson => lesson.id === item.id);
+          const lesson = this.lessons.find(lesson => lesson._id === item.id);
           lesson.spaces += item.quantity;
           this.cart = this.cart.filter(cartItem => cartItem.id !== item.id);
         },
