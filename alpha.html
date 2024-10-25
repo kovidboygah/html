@@ -41,6 +41,24 @@
             background-color: #ccc; /* Disabled state color */
             cursor: not-allowed;
         }
+        .cart-button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .remove-button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -63,30 +81,42 @@
         </select>
     </div>
 
-    <ul>
-        <li v-for="lesson in sortedLessons" :key="lesson.id" class="lesson-item">
-            <div>
-                <i :class="lesson.icon"></i> <!-- Font Awesome icon -->
-                <div>
-                    <h2>{{ lesson.subject }}</h2>
-                    <p><strong>Location:</strong> {{ lesson.location }}</p>
-                    <p><strong>Price:</strong> ${{ lesson.price.toFixed(2) }}</p>
-                    <p><strong>Spaces Available:</strong> {{ lesson.spaces }}</p>
-                </div>
-            </div>
-            <button class="add-to-cart" 
-                    :disabled="lesson.spaces <= 0" 
-                    @click="addToCart(lesson)">
-                {{ lesson.spaces > 0 ? 'Add to Cart' : 'Out of Stock' }}
-            </button>
-        </li>
-    </ul>
+    <button class="cart-button" @click="toggleCart">
+        {{ showCart ? 'Back to Lessons' : 'View Cart (' + cart.length + ')' }}
+    </button>
 
-    <h2>Shopping Cart</h2>
-    <ul>
-        <li v-for="item in cart" :key="item.id">{{ item.subject }} - ${{ item.price.toFixed(2) }}</li>
-    </ul>
-    <p>Total: ${{ total.toFixed(2) }}</p>
+    <div v-if="!showCart">
+        <ul>
+            <li v-for="lesson in sortedLessons" :key="lesson.id" class="lesson-item">
+                <div>
+                    <i :class="lesson.icon"></i> <!-- Font Awesome icon -->
+                    <div>
+                        <h2>{{ lesson.subject }}</h2>
+                        <p><strong>Location:</strong> {{ lesson.location }}</p>
+                        <p><strong>Price:</strong> ${{ lesson.price.toFixed(2) }}</p>
+                        <p><strong>Spaces Available:</strong> {{ lesson.spaces }}</p>
+                    </div>
+                </div>
+                <button class="add-to-cart" 
+                        :disabled="lesson.spaces <= 0" 
+                        @click="addToCart(lesson)">
+                    {{ lesson.spaces > 0 ? 'Add to Cart' : 'Out of Stock' }}
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div v-else>
+        <h2>Shopping Cart</h2>
+        <ul>
+            <li v-for="(item, index) in cart" :key="item.id">
+                {{ item.subject }} - ${{ item.price.toFixed(2) }}
+                <button class="remove-button" @click="removeFromCart(index)">Remove</button>
+            </li>
+        </ul>
+        <p v-if="cart.length === 0">Your cart is empty.</p>
+        <p>Total: ${{ total.toFixed(2) }}</p>
+    </div>
 </div>
 
 <script>
@@ -107,7 +137,8 @@
             ],
             sortKey: 'subject', // Default sort key
             sortOrder: 'asc', // Default sort order
-            cart: [] // Shopping cart array
+            cart: [], // Shopping cart array
+            showCart: false // Track whether the cart is shown
         },
         computed: {
             sortedLessons() {
@@ -138,6 +169,14 @@
                     // Decrease available spaces
                     lesson.spaces--;
                 }
+            },
+            toggleCart() {
+                this.showCart = !this.showCart; // Toggle cart view
+            },
+            removeFromCart(index) {
+                const lesson = this.cart[index]; // Get the lesson to be removed
+                this.cart.splice(index, 1); // Remove from cart
+                lesson.spaces++; // Increase spaces back in lessons
             }
         }
     });
