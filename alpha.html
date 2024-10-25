@@ -81,7 +81,9 @@
         </select>
     </div>
 
-    <button class="cart-button" @click="toggleCart">
+    <button class="cart-button" 
+            :disabled="cart.length === 0" 
+            @click="toggleCart">
         {{ showCart ? 'Back to Lessons' : 'View Cart (' + cart.length + ')' }}
     </button>
 
@@ -177,6 +179,10 @@
                 const lesson = this.cart[index]; // Get the lesson to be removed
                 this.cart.splice(index, 1); // Remove from cart
                 lesson.spaces++; // Increase spaces back in lessons
+                // Ensure that the cart view updates correctly after removing an item
+                if (this.cart.length === 0) {
+                    this.showCart = false; // Show lesson page when cart is empty
+                }
             }
         }
     });
