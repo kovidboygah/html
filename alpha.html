@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson List</title>
+    <!-- Include Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
+    <!-- Include Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .lesson-item {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .lesson-item i {
+            margin-right: 10px;
+            font-size: 24px; /* Adjust icon size */
+        }
+        .sort-controls {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <h1>Available Lessons</h1>
+
+    <div class="sort-controls">
+        <label for="sort-by">Sort by:</label>
+        <select id="sort-by" v-model="sortKey">
+            <option value="subject">Subject</option>
+            <option value="location">Location</option>
+            <option value="price">Price</option>
+            <option value="spaces">Spaces</option>
+        </select>
+        <label for="sort-order">Order:</label>
+        <select id="sort-order" v-model="sortOrder">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+    </div>
+
+    <ul>
+        <li v-for="lesson in sortedLessons" :key="lesson.id" class="lesson-item">
+            <i :class="lesson.icon"></i> <!-- Font Awesome icon -->
+            <div>
+                <h2>{{ lesson.subject }}</h2>
+                <p><strong>Location:</strong> {{ lesson.location }}</p>
+                <p><strong>Price:</strong> ${{ lesson.price.toFixed(2) }}</p>
+                <p><strong>Spaces Available:</strong> {{ lesson.spaces }}</p>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            lessons: [
+                { id: 1, subject: "Math", location: "Room A", price: 20, spaces: 5, icon: "fas fa-calculator" },
+                { id: 2, subject: "Science", location: "Room B", price: 25, spaces: 5, icon: "fas fa-flask" },
+                { id: 3, subject: "History", location: "Room C", price: 15, spaces: 5, icon: "fas fa-book" },
+                { id: 4, subject: "Art", location: "Room D", price: 30, spaces: 5, icon: "fas fa-paint-brush" },
+                { id: 5, subject: "Music", location: "Room E", price: 22, spaces: 5, icon: "fas fa-music" },
+                { id: 6, subject: "Physics", location: "Room F", price: 28, spaces: 5, icon: "fas fa-atom" },
+                { id: 7, subject: "Geography", location: "Room G", price: 18, spaces: 5, icon: "fas fa-globe" },
+                { id: 8, subject: "Literature", location: "Room H", price: 20, spaces: 5, icon: "fas fa-feather-alt" },
+                { id: 9, subject: "Programming", location: "Room I", price: 35, spaces: 5, icon: "fas fa-code" },
+                { id: 10, subject: "Physical Education", location: "Gym", price: 15, spaces: 5, icon: "fas fa-football-ball" },
+            ],
+            sortKey: 'subject', // Default sort key
+            sortOrder: 'asc' // Default sort order
+        },
+        computed: {
+            sortedLessons() {
+                return this.lessons.slice().sort((a, b) => {
+                    let modifier = this.sortOrder === 'asc' ? 1 : -1;
+                    
+                    // Sorting based on the selected sort key
+                    if (this.sortKey === 'subject') {
+                        return a.subject.localeCompare(b.subject) * modifier;
+                    } else if (this.sortKey === 'location') {
+                        return a.location.localeCompare(b.location) * modifier;
+                    } else if (this.sortKey === 'price') {
+                        return (a.price - b.price) * modifier;
+                    } else if (this.sortKey === 'spaces') {
+                        return (a.spaces - b.spaces) * modifier;
+                    }
+                });
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
