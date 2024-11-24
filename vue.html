@@ -1,230 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lessons with Checkout</title>
-  <!-- Include Vue 2.7.8 via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8"></script>
-  <!-- Include Font Awesome for Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    .lesson, .cart-item {
-      border: 1px solid #ddd;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 8px;
-      background-color: #f9f9f9;
-    }
-    .icon {
-      color: #2a9d8f;
-      margin-right: 10px;
-    }
-    .cart-btn, .remove-btn, .checkout-btn, .back-btn {
-      padding: 5px 10px;
-      background-color: #2a9d8f;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    .cart-btn:disabled, .remove-btn:disabled, .checkout-btn:disabled, .back-btn:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-    .switch-view-btn {
-      margin: 10px 0;
-    }
-    .checkout-form {
-      margin: 20px 0;
-      padding: 15px;
-      background-color: #f1f1f1;
-      border-radius: 8px;
-    }
-    .confirmation-message {
-      color: green;
-      margin: 20px 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson List</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .lesson-item {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .lesson-item i {
+            margin-right: 10px;
+            font-size: 24px;
+        }
+        .sort-controls {
+            margin-bottom: 20px;
+        }
+        .add-to-cart {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .add-to-cart:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .cart-button, .checkout-button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .remove-button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .checkout-form {
+            margin-top: 20px;
+        }
+        .search-bar {
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
 </head>
 <body>
-  <div id="app">
-    <h1 v-if="showLessonsPage">List of Lessons</h1>
-    <h1 v-else>Shopping Cart</h1>
 
-    <!-- Switch between Lesson Page and Cart Page -->
-    <button
-      class="switch-view-btn"
-      @click="toggleCartView"
-      :disabled="cart.length === 0"
-    >
-      {{ showLessonsPage ? 'View Cart' : 'Back to Lessons' }}
+<div id="app">
+    <h1>Available Lessons</h1>
+
+    <!-- Single Search Bar -->
+    <div>
+        <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search for lessons"
+            class="search-bar"
+            @input="searchLessons"
+        />
+    </div>
+
+    <div class="sort-controls">
+        <label for="sort-by">Sort by:</label>
+        <select id="sort-by" v-model="sortKey">
+            <option value="subject">Subject</option>
+            <option value="location">Location</option>
+            <option value="price">Price</option>
+            <option value="spaces">Spaces</option>
+        </select>
+        <label for="sort-order">Order:</label>
+        <select id="sort-order" v-model="sortOrder">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+    </div>
+
+    <button v-if="cart.length > 0 || showCart" class="cart-button" @click="toggleCart">
+        {{ showCart ? 'Back to Lessons' : 'View Cart (' + cart.length + ')' }}
     </button>
 
-    <!-- Lessons List -->
-    <div v-if="showLessonsPage">
-      <div v-for="lesson in lessons" :key="lesson._id" class="lesson">
-        <h3><i class="icon fas fa-book"></i>{{ lesson.subject }}</h3>
-        <p><strong>Location:</strong> {{ lesson.location }}</p>
-        <p><strong>Price:</strong> ${{ lesson.price }}</p>
-        <p><strong>Spaces Left:</strong> {{ lesson.spaces }}</p>
-
-        <!-- Add to Cart Button -->
-        <button
-          class="cart-btn"
-          :disabled="lesson.spaces === 0"
-          @click="addToCart(lesson)"
-        >
-          Add to Cart
-        </button>
-      </div>
+    <div v-if="!showCart">
+        <ul>
+            <li v-for="lesson in sortedLessons" :key="lesson._id" class="lesson-item">
+                <div>
+                    <i :class="lesson.icon"></i>
+                    <div>
+                        <h2>{{ lesson.subject }}</h2>
+                        <p><strong>Location:</strong> {{ lesson.location }}</p>
+                        <p><strong>Price:</strong> ${{ lesson.price.toFixed(2) }}</p>
+                        <p><strong>Spaces Available:</strong> {{ lesson.spaces }}</p>
+                    </div>
+                </div>
+                <button class="add-to-cart" 
+                        :disabled="lesson.spaces <= 0" 
+                        @click="addToCart(lesson)">
+                    {{ lesson.spaces > 0 ? 'Add to Cart' : 'Out of Stock' }}
+                </button>
+            </li>
+        </ul>
     </div>
 
-    <!-- Shopping Cart Page -->
     <div v-else>
-      <!-- Cart Items -->
-      <div v-if="cart.length === 0">Your cart is empty.</div>
-      <div v-for="(item, index) in cart" :key="item._id" class="cart-item">
-        <h3><i class="icon fas fa-shopping-cart"></i>{{ item.subject }}</h3>
-        <p><strong>Quantity:</strong> {{ item.quantity }}</p>
+        <h2>Shopping Cart</h2>
+        <ul>
+            <li v-for="(item, index) in cart" :key="item._id">
+                {{ item.subject }} - ${{ item.price.toFixed(2) }}
+                <button class="remove-button" @click="removeFromCart(index)">Remove</button>
+            </li>
+        </ul>
+        <p v-if="cart.length === 0">Your cart is empty.</p>
+        <p>Total: ${{ total.toFixed(2) }}</p>
 
-        <!-- Remove from Cart Button -->
-        <button
-          class="remove-btn"
-          @click="removeFromCart(item)"
-        >
-          Remove from Cart
-        </button>
-      </div>
-
-      <!-- Checkout Form -->
-      <div class="checkout-form">
-        <h3>Checkout</h3>
-        <p>
-          <label for="name">Name:</label>
-          <input type="text" v-model="name" @input="validateForm" />
-          <span v-if="nameError" style="color: red;">{{ nameError }}</span>
-        </p>
-        <p>
-          <label for="phone">Phone:</label>
-          <input type="text" v-model="phone" @input="validateForm" />
-          <span v-if="phoneError" style="color: red;">{{ phoneError }}</span>
-        </p>
-        <button
-          class="checkout-btn"
-          :disabled="!isCheckoutEnabled"
-          @click="submitOrder"
-        >
-          Checkout
-        </button>
-
-        <!-- Go Back Button -->
-        <button
-          class="back-btn"
-          @click="goBack"
-        >
-          Go Back
-        </button>
-      </div>
-
-      <!-- Confirmation Message -->
-      <div v-if="confirmationMessage" class="confirmation-message">
-        {{ confirmationMessage }}
-      </div>
+        <!-- Checkout Form -->
+        <div class="checkout-form" v-if="cart.length > 0">
+            <h3>Checkout</h3>
+            <label for="name">Name:</label>
+            <input type="text" v-model="name" @input="validateName" placeholder="Enter your name" />
+            <span v-if="!isNameValid && name.length > 0" style="color: red;">Name must contain letters only.</span>
+            <br>
+            <label for="phone">Phone:</label>
+            <input type="text" v-model="phone" @input="validatePhone" placeholder="Enter your phone number" />
+            <span v-if="!isPhoneValid && phone.length > 0" style="color: red;">Phone must contain numbers only.</span>
+            <br>
+            <button class="checkout-button" 
+                    :disabled="!isNameValid || !isPhoneValid" 
+                    @click="checkout">
+                Checkout
+            </button>
+        </div>
     </div>
-  </div>
+</div>
 
-  <script>
+<script>
     new Vue({
-      el: '#app',
-      data: {
-        showLessonsPage: true, // Show lessons page by default
-        lessons: [], // Empty array to be filled by fetched lessons
-        cart: [],
-        name: '',
-        phone: '',
-        nameError: '',
-        phoneError: '',
-        isCheckoutEnabled: false,
-        confirmationMessage: ''
-      },
-      created() {
-        this.fetchLessons(); // Fetch lessons when the Vue instance is created
-      },
-      methods: {
-        async fetchLessons() {
-          try {
-            const response = await fetch('http://localhost:3000/lessons');
-            const data = await response.json();
-            this.lessons = data; // Assign the fetched lessons to the lessons array
-          } catch (error) {
-            console.error('Error fetching lessons:', error);
-          }
+        el: '#app',
+        data: {
+            lessons: [],
+            sortKey: 'subject',
+            sortOrder: 'asc',
+            cart: [],
+            showCart: false,
+            name: '',
+            phone: '',
+            isNameValid: false,
+            isPhoneValid: false,
+            searchQuery: '',
         },
-        addToCart(lesson) {
-          if (lesson.spaces > 0) {
-            lesson.spaces -= 1;
-
-            const cartItem = this.cart.find(item => item.id === lesson.id);
-            if (cartItem) {
-              cartItem.quantity += 1;
-            } else {
-              this.cart.push({
-                id: lesson._id,
-                subject: lesson.subject,
-                quantity: 1
-              });
+        computed: {
+            sortedLessons() {
+                return this.lessons.slice().sort((a, b) => {
+                    let modifier = this.sortOrder === 'asc' ? 1 : -1;
+                    if (this.sortKey === 'subject') return a.subject.localeCompare(b.subject) * modifier;
+                    if (this.sortKey === 'location') return a.location.localeCompare(b.location) * modifier;
+                    if (this.sortKey === 'price') return (a.price - b.price) * modifier;
+                    if (this.sortKey === 'spaces') return (a.spaces - b.spaces) * modifier;
+                });
+            },
+            total() {
+                return this.cart.reduce((acc, item) => acc + item.price, 0);
             }
-          }
         },
-        removeFromCart(item) {
-          const lesson = this.lessons.find(lesson => lesson._id === item.id);
-          lesson.spaces += item.quantity;
-          this.cart = this.cart.filter(cartItem => cartItem.id !== item.id);
-        },
-        toggleCartView() {
-          this.showLessonsPage = !this.showLessonsPage;
-        },
-        validateForm() {
-          const nameRegex = /^[a-zA-Z\s]+$/; // Only letters and spaces
-          const phoneRegex = /^\d+$/; // Only numbers
+        methods: {
+            async fetchLessons() {
+                const params = new URLSearchParams();
 
-          this.nameError = '';
-          this.phoneError = '';
+                if (this.searchQuery) {
+                    params.append('query', this.searchQuery); // Send a single query to the backend
+                }
 
-          if (!nameRegex.test(this.name)) {
-            this.nameError = 'Name must contain letters only';
-          }
+                try {
+                    const response = await fetch(`http://localhost:3000/search?${params.toString()}`);
+                    if (response.ok) {
+                        const lessons = await response.json();
+                        this.lessons = lessons;
+                    } else {
+                        alert('Error fetching lessons.');
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                }
+            },
+            toggleCart() {
+                this.showCart = !this.showCart;
+            },
+            addToCart(lesson) {
+                if (lesson.spaces > 0) {
+                    this.cart.push(lesson);
+                    lesson.spaces--;
+                }
+            },
+            removeFromCart(index) {
+                const item = this.cart.splice(index, 1)[0];
+                const lesson = this.lessons.find(l => l._id === item._id);
+                if (lesson) lesson.spaces++;
+            },
+            validateName() {
+                this.isNameValid = /^[a-zA-Z\s]+$/.test(this.name);
+            },
+            validatePhone() {
+                this.isPhoneValid = /^[0-9\s]+$/.test(this.phone);
+            },
+            async checkout() {
+                const orderData = {
+                    name: this.name,
+                    phone: this.phone,
+                    lessonIDs: this.cart.map(item => item._id),
+                    numberOfSpaces: this.cart.map(item => item.quantity || 0),
+                };
 
-          if (!phoneRegex.test(this.phone)) {
-            this.phoneError = 'Phone must contain numbers only';
-          }
+                try {
+                    // Step 1: Submit the order
+                    const response = await fetch('http://localhost:3000/orders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderData),
+                    });
 
-          this.isCheckoutEnabled = !this.nameError && !this.phoneError && this.name !== '' && this.phone !== '';
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('Order result:', result);
+
+                        // Step 2: Update lesson spaces
+                        const updatePromises = this.cart.map(item => {
+                            const updatedSpaces = item.spaces - (item.quantity || 0);
+                            console.log(`Updating lesson ID: ${item._id}, New Spaces: ${updatedSpaces}`);
+
+                            if (updatedSpaces < 0) {
+                                console.error(`Invalid space update for lesson ID ${item._id}`);
+                                return Promise.resolve({ ok: false }); // Skip invalid updates
+                            }
+
+                            return fetch(`http://localhost:3000/lessons/${item._id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ spaces: updatedSpaces }),
+                            });
+                        });
+
+                        await Promise.all(updatePromises);
+
+                        alert('Order placed.');
+
+                        // Clear cart and reset form
+                        this.cart = [];
+                        this.name = '';
+                        this.phone = '';
+                    } else {
+                        console.log('Error placing order.');
+                    }
+                } catch (error) {
+                    console.error('Checkout error:', error);
+                    console.log('An error occurred.');
+                }
+            },
+            searchLessons() {
+                this.fetchLessons();
+            }
         },
-        submitOrder() {
-          if (this.isCheckoutEnabled) {
-            this.confirmationMessage = 'Order has been submitted successfully!';
-            this.cart = []; // Clear the cart after submission
-            this.name = '';
-            this.phone = '';
-            this.isCheckoutEnabled = false;
-          }
-        },
-        goBack() {
-          this.showLessonsPage = true; // Switch back to the lessons page
-          this.name = ''; // Clear the name input
-          this.phone = ''; // Clear the phone input
-          this.nameError = ''; // Reset name error
-          this.phoneError = ''; // Reset phone error
-          this.confirmationMessage = ''; // Reset confirmation message
+        mounted() {
+            this.fetchLessons(); // Initial fetch to load all lessons
         }
-      }
     });
-  </script>
+</script>
+
 </body>
 </html>
